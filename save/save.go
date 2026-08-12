@@ -47,11 +47,12 @@ func SaveConfig(results []check.Result) {
 	}
 
 	// ② 原地 mutate:把每个 proxy 的 name 改成最终展示名
+	// 不携带测速速率标签
 	for i := range results {
 		if results[i].Proxy == nil {
 			continue
 		}
-		results[i].Proxy["name"] = check.RenderName(results[i], true)
+		results[i].Proxy["name"] = check.RenderName(results[i], false)
 	}
 
 	// ③ 用 mutate 过的 results 序列化,给 all.yaml / 远程 / SubStore 复用
