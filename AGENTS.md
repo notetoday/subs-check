@@ -24,14 +24,14 @@
 
 ## 服务器部署
 
-服务器：`<SERVER_IP>:35312`，root 用户，部署目录 `/opt/subs-check`。
+> 注意：服务器 IP、端口、登录凭据、worker-url 等敏感信息**不要写入本文件**（公开仓库）。以下流程使用占位符 `<SERVER>` 表示服务器，实际部署时替换为真实值。
 
 ### socks5proxy 更新流程
 
 ```bash
-curl -fsSL -o /opt/subs-check/socks5proxy.new \
+curl -fsSL -o <DEPLOY_DIR>/socks5proxy.new \
   https://github.com/notetoday/subs-check/releases/download/socks5proxy-latest/socks5proxy_linux_amd64
-chmod +x /opt/subs-check/socks5proxy.new
+chmod +x <DEPLOY_DIR>/socks5proxy.new
 sha256sum -c socks5proxy_linux_amd64.sha256 && mv socks5proxy.new socks5proxy
 systemctl restart socks5proxy
 ```
@@ -40,8 +40,8 @@ systemctl restart socks5proxy
 
 ### 服务器运行服务
 
-- `socks5proxy.service`：监听 `127.0.0.1:7890`，节点池数据源 `/opt/subs-check/output/mihomo.yaml`（subs-check 每轮检测自动更新）
-- `subs-check.service`：主服务，config 中 `proxy: "http://127.0.0.1:7890"`、`save-method: r2`、`worker-url: https://<WORKER_HOST>`
+- `socks5proxy.service`：监听 `127.0.0.1:7890`，节点池数据源 `<DEPLOY_DIR>/output/mihomo.yaml`（subs-check 每轮检测自动更新）
+- `subs-check.service`：主服务，config 中 `proxy: "http://127.0.0.1:7890"`、`save-method: r2`、`worker-url: <WORKER_URL>`
 
 ### 节点代理方案背景
 
