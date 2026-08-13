@@ -257,8 +257,10 @@ func GetDateFromSubs(subUrl string) ([]byte, error) {
 	}
 	var lastErr error
 
+	// 订阅抓取直连服务器，不走全局代理（HTTP_PROXY/HTTPS_PROXY）。
+	// 服务器侧通过 gh-proxy 前缀即可访问 GitHub 等订阅源，走代理反而更慢。
 	transport := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
+		Proxy: nil,
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
 		},
