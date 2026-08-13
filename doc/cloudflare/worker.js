@@ -61,10 +61,6 @@ const routeHandlers = {
     },
 
     async storage(request, url, env) {
-        if (!await validateToken(url, env)) {
-            return handleError('未授权访问', 401);
-        }
-
         if (request.method === 'GET') {
             const filename = url.searchParams.get('filename');
             if (!filename) {
@@ -72,15 +68,19 @@ const routeHandlers = {
             }
 
             try {
-                const object = await env.SUB_BUCKET.get(filename);
-                if (object === null) {
+                const value = await env.SUB_BUCKET.get(filename);
+                if (value === null) {
                     return handleError('未找到该键对应的值', 404);
                 }
-                return createResponse(await object.text(), 200, 'text/plain');
+                return createResponse(value, 200, 'text/plain');
             } catch (error) {
                 return handleError('读取数据失败: ' + error.message);
             }
         } else if (request.method === 'POST') {
+            if (!await validateToken(url, env)) {
+                return handleError('未授权访问', 401);
+            }
+
             try {
                 const { filename, value } = await request.json();
                 if (!filename || !value) {
