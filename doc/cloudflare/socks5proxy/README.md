@@ -15,12 +15,31 @@
 
 ## 编译
 
+### 本地编译
+
 ```bash
 cd socks5proxy
 GOPROXY=https://goproxy.cn,direct CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o socks5proxy .
 ```
 
 产物为单静态二进制，约 40MB，可直接 scp 到服务器。
+
+### GitHub Actions 自动构建
+
+仓库已配置 `.github/workflows/build-socks5proxy.yml`：每次 push 修改 `doc/cloudflare/socks5proxy/` 即自动编译 linux/amd64 版，产物同时上传：
+
+- **Actions Artifact**：`socks5proxy-linux-amd64`（保留 30 天）
+- **Release**：tag `socks5proxy-latest`，服务器可直接下载：
+
+```bash
+curl -fsSL -o /opt/subs-check/socks5proxy.new \
+  https://github.com/notetoday/subs-check/releases/download/socks5proxy-latest/socks5proxy_linux_amd64
+chmod +x /opt/subs-check/socks5proxy.new
+sha256sum -c socks5proxy_linux_amd64.sha256 && mv socks5proxy.new socks5proxy
+systemctl restart socks5proxy
+```
+
+若服务器访问 GitHub 慢，可加 `https://ghfast.top/` 前缀加速。
 
 ## 部署
 

@@ -1,0 +1,55 @@
+name: build-socks5proxy
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'doc/cloudflare/socks5proxy/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: doc/cloudflare/socks5proxy/go.mod
+
+      - name: Build
+        working-directory: doc/cloudflare/socks5proxy
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o socks5proxy_linux_amd64 .
+          sha256sum socks5proxy_linux_amd64 > socks5proxy_linux_amd64.sha256
+          file socks5proxy_linux_amd64
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: socks5proxy-linux-amd64
+          path: |
+            doc/cloudflare/socks5proxy/socks5proxy_linux_amd64
+            doc/cloudflare/socks5proxy/socks5proxy_linux_amd64.sha256
+          retention-days: 30
+
+      - name: Publish to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: socks5proxy-latest
+          name: socks5proxy latest build
+          body: |
+            Auto-built from latest master.
+            Commit: `${{ github.sha }}`
+          files: |
+            doc/cloudflare/socks5proxy/socks5proxy_linux_amd64
+            doc/cloudflare/socks5proxy/socks5proxy_linux_amd64.sha256
+          allowUpdates: true
+          make_latest: false
+          prerelease: true
