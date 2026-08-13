@@ -42,6 +42,18 @@ var zhCountryAlpha2 = map[string]string{
 	"摩洛哥": "MA", "肯尼亚": "KE", "埃塞俄比亚": "ET",
 }
 
+// zhCountryAlpha2Reversed Alpha2 代码 -> 中文国家名，由 zhCountryAlpha2 反向生成。
+// 用于节点命名时把 Alpha2 国家码转成中文展示名。
+var zhCountryAlpha2Reversed = func() map[string]string {
+	m := make(map[string]string, len(zhCountryAlpha2))
+	for zh, code := range zhCountryAlpha2 {
+		if _, ok := m[code]; !ok {
+			m[code] = zh
+		}
+	}
+	return m
+}()
+
 // ping0URL 便于测试替换
 var ping0URL = "https://ping0.cc/geo"
 

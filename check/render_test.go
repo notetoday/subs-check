@@ -235,14 +235,14 @@ func TestRenderName_RenameOnWithCountry(t *testing.T) {
 		if len(got) < len("PREFIX-") || got[:len("PREFIX-")] != "PREFIX-" {
 			t.Errorf("RenderName() should start with prefix, got %q", got)
 		}
-		if !stringContains(got, "HK") {
-			t.Errorf("RenderName() should contain country code HK, got %q", got)
+		if !stringContains(got, "香港") {
+			t.Errorf("RenderName() should contain Chinese country name 香港, got %q", got)
 		}
 	})
 }
 
 func TestRenderName_RenameOnButEmptyCountry_UsesOtherFallback(t *testing.T) {
-	// 重命名开启但 Country 为空(Phase 2 查询失败),应走 ❓Other 兜底
+	// 重命名开启但 Country 为空(Phase 2 查询失败),应走 备用 兜底
 	// 而不是回退到原名,否则上游带 |speed|media 尾缀的脏名会透传进来再被叠加。
 	proxyutils.ResetRenameCounter()
 	withConfig(t, config.Config{
@@ -261,8 +261,8 @@ func TestRenderName_RenameOnButEmptyCountry_UsesOtherFallback(t *testing.T) {
 		if len(got) < len("PREFIX-") || got[:len("PREFIX-")] != "PREFIX-" {
 			t.Errorf("RenderName() should start with prefix, got %q", got)
 		}
-		if !stringContains(got, "Other") {
-			t.Errorf("RenderName() should fall back to Other when Country is empty, got %q", got)
+		if !stringContains(got, "备用") {
+			t.Errorf("RenderName() should fall back to 备用 when Country is empty, got %q", got)
 		}
 	})
 }
