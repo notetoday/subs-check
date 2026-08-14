@@ -45,7 +45,24 @@ systemctl restart socks5proxy
 
 ### 节点代理方案背景
 
-服务器到目标站点（Cloudflare Worker）被 SNI 级 DPI 阻断（TCP 443 带目标 SNI 即 RST，UDP 443 QUIC 超时，DNS 污染），因此通过 socks5proxy 节点池作为出站出口。检测/测速走节点直连（`check.go` 的 `baseTransport` 自定义 `DialContext`），不受代理影响；仅订阅抓取和 R2 上传走代理（`app.go` Initialize 时写入 `HTTP_PROXY`/`HTTPS_PROXY`）。
+服务器到目标站点（Cloudflare Worker）被 SNI 级 DPI 阻断（TCP 443 带目标 SNI 即 RST，UDP 443 QUIC 超时，DNS 污染），因此通过 socks5proxy 节点池作为出站出口。检测/测速走节点直连（`check.go` 的 `baseTransport` 自定义 `DialContext`），不受代理影响；仅 R2 上传走代理（`app.go` Initialize 时写入 `HTTP_PROXY`/`HTTPS_PROXY`）。
+
+### 订阅抓取代理策略（px: 前缀路由）
+
+`proxy/get.go` 的 `GetDateFromSubs` 按链接前缀决定是否走代理：
+
+- **带 `px:` 前缀**的订阅链接：剥离前缀后走全局代理（socks5proxy 节点池），适用于被 DPI 屏蔽的源（如 pages.dev / workers.dev 托管的订阅，如 `xin.riyuexing.dynv6.net`）
+- **无前缀**的订阅链接：服务器直连，适用于 gh-proxy 前缀可直连的源（GitHub 等）
+
+服务器直连 GitHub 超时，需用 gh-proxy（如 `axisnow.gh-proxy.org/`、`ghfast.top/`）前缀；直连 pages.dev 超时，需 `px:` 前缀走代理。配置示例：
+
+```yaml
+sub-urls:
+  - "px:https://xin.riyuexing.dynv6.net/Ex/XingYue"   # pages.dev 类，走代理
+  - "https://axisnow.gh-proxy.org/https://raw.githubusercontent.com/..."  # GitHub 类，直连
+```
+
+前缀剥离与代理选择逻辑在 `proxy/get.go` 的 `resolveSubUrlProxy`，单元测试见 `proxy/get_test.go`。
 
 ## 常用约定
 
