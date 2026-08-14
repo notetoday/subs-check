@@ -29,6 +29,10 @@ type subEntry struct {
 	source string
 }
 
+// proxyPrefix 订阅链接前缀路由标记：链接带此前缀时，抓取走全局代理
+// （HTTP_PROXY/HTTPS_PROXY，即 socks5proxy），适用于被 DPI 屏蔽的源。
+const proxyPrefix = "px:"
+
 func GetProxies() ([]map[string]any, error) {
 
 	// 解析本地与远程订阅清单
@@ -242,6 +246,16 @@ func fetchRemoteSubUrls(listURL string) ([]string, error) {
 	return res, nil
 }
 
+// resolveSubUrlProxy 解析订阅链接前缀路由：
+// 链接带 "px:" 前缀时剥离前缀并返回 useProxy=true（走全局代理），
+// 否则原样返回 useProxy=false（直连）。
+func resolveSubUrlProxy(subUrl string) (bool, string) {
+	if strings.HasPrefix(subUrl, proxyPrefix) {
+		return true, strings.TrimPrefix(subUrl, proxyPrefix)
+	}
+	return false, subUrl
+}
+
 // 订阅链接中获取数据
 func GetDateFromSubs(subUrl string) ([]byte, error) {
 	maxRetries := config.GlobalConfig.SubUrlsReTry
@@ -257,10 +271,13 @@ func GetDateFromSubs(subUrl string) ([]byte, error) {
 	}
 	var lastErr error
 
-	// 订阅抓取直连服务器，不走全局代理（HTTP_PROXY/HTTPS_PROXY）。
-	// 服务器侧通过 gh-proxy 前缀即可访问 GitHub 等订阅源，走代理反而更慢。
+	useProxy, url := resolveSubUrlProxy(subUrl)
+	proxyFn := http.ProxyFromEnvironment
+	if !useProxy {
+		proxyFn = nil
+	}
 	transport := &http.Transport{
-		Proxy: nil,
+		Proxy: proxyFn,
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
 		},
@@ -285,7 +302,7 @@ func GetDateFromSubs(subUrl string) ([]byte, error) {
 			time.Sleep(time.Duration(retryInterval) * time.Second)
 		}
 
-		req, err := http.NewRequest("GET", subUrl, nil)
+		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			lastErr = err
 			continue
