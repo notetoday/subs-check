@@ -1,0 +1,61 @@
+name: Sync fork with upstream
+
+on:
+  schedule:
+    # 每天 UTC 20:23（北京时间次日 04:23）自动同步一次上游
+    - cron: '23 20 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch upstream
+        run: |
+          git remote add upstream https://github.com/beck-8/subs-check.git
+          git fetch upstream master
+
+      - name: Check for upstream changes
+        id: check
+        run: |
+          if git diff --quiet HEAD upstream/master; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "upstream has no new commits, skip"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Merge upstream/master
+        if: steps.check.outputs.changed == 'true'
+        run: git merge --no-edit upstream/master
+
+      - name: Set up Go
+        if: steps.check.outputs.changed == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build and test
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          go build ./...
+          go test ./...
+
+      - name: Push to fork master
+        if: steps.check.outputs.changed == 'true'
+        run: git push origin master
