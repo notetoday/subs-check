@@ -15,8 +15,9 @@ import (
 //   - 不读写 proxy map 的 name 字段,不修改 Result
 //   - 仅依赖传入的 Result 和 config.GlobalConfig
 //
-// includeSpeed 为 true 时追加速度标签,只在最终输出 all.yaml 时用。
-// filter 阶段应该传 false,因为此时尚未测速。
+// includeSpeed 为 true 时追加速度标签。
+// 当前节点名不展示速度(速度在 Web 面板结果页的 Speed 字段单独展示),
+// save 阶段也传 false;该参数仅为兼容保留,filter 阶段传 false。
 func RenderName(r Result, includeSpeed bool) string {
 	return RenderNameParts(r, includeSpeed).String()
 }
@@ -62,7 +63,7 @@ func RenderNameParts(r Result, includeSpeed bool) NameParts {
 
 	// 1. base 名字
 	// RenameNode 是"强覆盖合约":只要开了就用 Rename(Country) 的结果覆盖原名,
-	// Country 为空时 Rename 会走 ❓Other_N 的兜底。
+	// Country 为空时 Rename 会走 备用NN 的兜底。
 	// 这样能确保上游订阅里已有的 |speed|media 尾缀不会透传进来再被叠加,
 	// 否则在 IP 查询失败(免费节点常见)的节点上会出现重复标签。
 	if config.GlobalConfig.RenameNode {
